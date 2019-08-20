@@ -1,4 +1,6 @@
 import React, { Component } from 'react';
+import ReactDOM from 'react-dom';
+import _ from 'lodash';
 import './App.css';
 import axios from 'axios';
 
@@ -9,22 +11,25 @@ constructor(props) {
 
   this.state = {
     users: [],
-    avatar: true,
+    avatar: {isHidden: true},
     page: 1,
     pageNext: 2,
     value: '',
-    firstName: []
-  };
+    filteredList: [],
+    listContacts: this.listContacts.bind(this)
+    };
 }
 
-   componentDidMount(){
-    let page= this.page;
-    axios.get('https://reqres.in/api/users?per_page=6&${page}').then(data=>{this.setState({users: data.data.data})})
-  }
+componentDidMount(){
+  let page= this.page;
+  axios.get('https://reqres.in/api/users?per_page=6&${page}')
+    .then(data=>{this.setState({users: data.data.data})})
+    .then(names=>this.setState({filteredList: names}))
+}
 
 hideAvatar = () => {
   this.setState({
-    avatar: !this.state.avatar
+    avatar: {isHidden: true}
   });
   console.log('avatar clicked!');
 }
@@ -39,7 +44,7 @@ axios.get(`https://reqres.in/api/users?per_page=6&page=${pageChange}`).then(data
 this.setState({page: pageChange, pageNext:pageChangeNext, users: data.data.data})
 console.log(this.state)
 })
-this.mapUsers()
+this.listContacts()
 }
 
 changePageBack = () => {
@@ -52,13 +57,13 @@ axios.get(`https://reqres.in/api/users?per_page=6&page=${pageChange}`).then(data
 this.setState({page: pageChange, pageNext:pageChangeNext, users: data.data.data})
 console.log(this.state)
 })
-this.mapUsers()
+this.listContacts()
 }
 
-mapUsers = () => {
+listContacts = () => {
   let userList = this.state.users.map(m => {
   return <div key={m.id}>
-    <button onClick={ () => this.hideAvatar()}>
+    <button onClick={this.hideAvatar.bind(this)}>
       <a href="#" className="ui avatar image">
         <img alt="avatar" src={m.avatar} />
       </a>
@@ -74,28 +79,45 @@ mapUsers = () => {
   return userList
 }
 
-filterFirstName = (e) => {
+//dynamically update search input
+inputFirstName = (e) => {
   console.log(this.state);
-  const filteredList = this.state.users.filter( item => (
-      item.first_name.toLowerCase().search(this.state.value.toLowerCase() !== -1)
-  ))
-  //this.setState({ filtered: filteredList });
-};
+
+  let updatedList = this.state.filteredList;
+  const newSearch = document.getElementById("searchName");
+  const searched = document.getElementById("searchBar");
+
+    if (newSearch.value !== "") {
+      updatedList.push(newSearch.value);
+      this.setState({
+        updatedList: updatedList
+      });
+      searched.reset();
+    }
+  }
+
+  //filter through updatedList, match with input
+  // filtered = _.filter(users, (person) => {
+  //   person.first_name.indexOf(value) > -1
+  // });
+  // console.log(filtered);
 
 handleSearchChange = (e) => {
   //console.log('search' , this.state.value);
+  e.preventDefault();
   this.setState({
     value: e.target.value
   });
-  this.filterFirstName()
+  console.log(e.target.value);
+  this.inputFirstName()
 }
 
-handleSubmit = (e) => {
-  console.log(this.state.value);
-  e.preventDefault();
-}
+// handleSubmit = (e) => {
+//   console.log(this.state.value);
+//   e.preventDefault();
+// }
 
-  render() {
+  render(App) {
     return (
 
       <div className="App">
@@ -105,12 +127,12 @@ handleSubmit = (e) => {
           <br></br><br></br><br></br>
           <b>My Contact List</b>
 
-          <form className="Search-bar ui search" onSubmit={this.handleSubmit}>
+          <form id="searchBar" className="Search-bar ui search">
           <br></br><br></br>
             <label>
-            <input value={this.state.value} className="prompt" type="text submit" placeholder="search by first name..." onChange={this.handleSearchChange}/>
+            <input id="searchName" value={this.state.value} className="prompt" type="text submit" placeholder="search by first name..." onChange={this.handleSearchChange}/>
             </label>
-            <button type="submit">Search</button>
+            <button className="button is-info" onClick={this.inputFirstName}>Search</button>
           </form>
 
           <br></br>
@@ -123,7 +145,7 @@ handleSubmit = (e) => {
           <br></br>
 
             <div className= 'Contacts'>
-              {this.mapUsers()}
+              {this.listContacts()}
             </div>
           </div>
           <a
